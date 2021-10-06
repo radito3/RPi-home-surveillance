@@ -2,6 +2,7 @@ import io
 import picamera
 import logging
 import socketserver
+import subprocess
 from threading import Condition
 from http import server
 
@@ -41,10 +42,12 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
     # (streaming could be offloaded to a different thread and the main thread could stop that)
     def do_GET(self):
         if self.path == '/':
+	    # TODO: send json or html about available endpoints, do not redirect
             self.send_response(301)
             self.send_header('Location', '/index.html')
             self.end_headers()
         elif self.path == '/index.html':
+	    # TODO: do not end URLs with file extensions
             content = PAGE.encode('utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
@@ -75,6 +78,14 @@ class StreamingHandler(server.BaseHTTPRequestHandler):
         else:
             self.send_error(404)
             self.end_headers()
+
+# Start rtsp server on a /start_stream call and stop it on a /stop_stream call
+# This could lead to the API being RPC-oriented
+class RTSPServerDelegate():
+    # TODO: pass argumets from network request to process, do not use hardcoded values. Instead, have default values
+    with subprocess.Popen(["v4l2rtspserver", "-W", "1920", "-H", "1080", "-F", "24", "-P", "8554", "/dev/video0"],
+			  stdout=subprocess.PIPE, stderr=subprocess.PIPE) as proc:
+	proc.wait()
 
 class StreamingServer(socketserver.ThreadingMixIn, server.HTTPServer):
     allow_reuse_address = True
