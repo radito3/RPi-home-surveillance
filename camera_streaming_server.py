@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, redirect
 import json
 import signal
+import socket
 import subprocess
 
 app = Flask(__name__)
@@ -14,11 +15,11 @@ def index():
 def startStream():
     global rtspServerProcess
     if rtspServerProcess is not None:
-        return redirect("rtsp://raspberrypi.local:8554/stream")
+        return redirect("rtsp://" + socket.gethostname() + ".local:8554/stream")
     # TODO check request body for width, height and frames
     rtspServerProcess = subprocess.Popen(["v4l2rtspserver", "-W", "1240", "-H", "720", "-F", "24", "-P", "8554", "-u", "/stream", "/dev/video0"], 
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return redirect("rtsp://raspberrypi.local:8554/stream")
+    return redirect("rtsp://" + socket.gethostname() + ".local:8554/stream")
 
 @app.route('/stream/stop', methods=['POST'])
 def stopStream():
